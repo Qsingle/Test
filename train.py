@@ -87,7 +87,7 @@ for epoch in range(epochs):
         cla_loss = c_loss(c, label.long())
         m_loss = margin_loss(f_c, en_z)
         c_t_loss = cla_loss + m_loss
-        c_t_loss.backward()
+        c_t_loss.backward(retain_graph=True)
         classifier_opt.step()
         encoder.eval()
         decoder.train()
@@ -99,7 +99,7 @@ for epoch in range(epochs):
         h_loss = hinge_loss(de_x + x, x)
         adv_loss = a_loss(c, target.long())
         total_loss = adv_loss + 0.5 * h_loss
-        total_loss.backward()
+        total_loss.backward(retain_graph=True)
         decoder_opt.step()
         encoder.train()
         decoder.eval()
