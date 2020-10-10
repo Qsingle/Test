@@ -70,7 +70,7 @@ c_loss = nn.CrossEntropyLoss()
 a_loss = nn.CrossEntropyLoss()
 hinge_loss = nn.L1Loss()
 margin_loss = nn.MSELoss()
-reconstruct_loss = nn.MSELoss()
+reconstruct_loss = nn.L1Loss()
 
 for epoch in range(epochs):
     for x, label in train_loader:
