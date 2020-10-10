@@ -125,7 +125,7 @@ for epoch in range(epochs):
             adv_pred, _ = classifier(adv_x)
             adv_pred = F.softmax(adv_pred, dim=1)
             adv_pred = torch.max(adv_pred, dim=1)[1].detach().cpu().numpy()
-            pred = classifier(x).detach().cpu().numpy()
+            pred,_ = classifier(x)
             pred = torch.max(F.softmax(pred, dim=1), dim=1)[1].detach().cpu().numpy()
             for i in adv_pred:
                 p_a.append(i)
