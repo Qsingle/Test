@@ -52,10 +52,10 @@ test_dataset = CIFAR10("./data", train=False, transform=val_transform, download=
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-encoder = Encoder(in_ch=channels)
-decoder = Decoder(in_ch=2048, out_ch=channels)
+encoder = Encoder(in_ch=channels, nolinear=nn.LeakyReLU(inplace=False))
+decoder = Decoder(in_ch=2048, out_ch=channels, nolinear=nn.LeakyReLU(inplace=False))
 
-classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
+classifier = ResNet(channels, n_layers=50, num_classes=num_classes, nolinear=nn.LeakyReLU(inplace=False))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 encoder.to(device)
