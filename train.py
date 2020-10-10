@@ -52,10 +52,10 @@ test_dataset = CIFAR10("./data", train=False, transform=val_transform, download=
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-encoder = Encoder(in_ch=channels, nolinear=nn.LeakyReLU(inplace=False))
-decoder = Decoder(in_ch=2048, out_ch=channels, nolinear=nn.LeakyReLU(inplace=False))
+encoder = Encoder(in_ch=channels)
+decoder = Decoder(in_ch=2048, out_ch=channels)
 
-classifier = ResNet(channels, n_layers=50, num_classes=num_classes, nolinear=nn.LeakyReLU(inplace=False))
+classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 encoder.to(device)
@@ -89,27 +89,23 @@ for epoch in range(epochs):
         c_t_loss = cla_loss + m_loss
         c_t_loss.backward(retain_graph=True)
         classifier_opt.step()
-        encoder.eval()
+        encoder.train()
         decoder.train()
         classifier.eval()
+        encoder_opt.zero_grad()
         decoder_opt.zero_grad()
         en_z = encoder(x)
         de_x = decoder(en_z)
         c, c_f = classifier(de_x + x)
         h_loss = hinge_loss(de_x + x, x)
+        re = decoder(encoder(de_x + x))
+        re_loss = reconstruct_loss(re, x)
         adv_loss = a_loss(c, target.long())
-        total_loss = adv_loss + 0.5 * h_loss
+        total_loss = adv_loss + 0.5 * h_loss + 0.5*re_loss
         total_loss.backward(retain_graph=True)
         decoder_opt.step()
-        encoder.train()
-        decoder.eval()
-        classifier.eval()
         encoder_opt.zero_grad()
-        en_z = encoder(x+de_x)
-        de_x = decoder(en_z)
-        re_loss = reconstruct_loss(de_x, x)
-        re_loss.backward()
-        encoder_opt.step()
+       
     
     p_a = []
     p_p = []
