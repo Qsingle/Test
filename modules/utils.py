@@ -122,7 +122,7 @@ class BasicBlock(nn.Module):
     ResNet:"Deep Residual Learning for Image Recognition"<https://arxiv.org/pdf/1512.03385.pdf>
     SENet:"Squeeze-and-Excitation Networks"<https://arxiv.org/abs/1709.01507>
     '''
-    expansion = 4
+    expansion = 1
     def __init__(self, in_ch, planes, stride=1, downsample=None, bn=nn.BatchNorm2d, nolinear=nn.ReLU, semodule=None):
         '''
             Initialize the module.
