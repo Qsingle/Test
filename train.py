@@ -55,7 +55,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num
 encoder = Encoder(in_ch=channels)
 decoder = Decoder(in_ch=2048, out_ch=channels)
 
-classifier = ResNet(channels, n_layers=18, num_classes=num_classes)
+classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 encoder.to(device)
