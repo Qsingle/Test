@@ -36,10 +36,10 @@ class Encoder(nn.Module):
         self.conv2 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.conv3 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.maxpool = nn.MaxPool2d(3, stride=2, padding=1)
-        self.layer1 = self.__make_layer(Block, 64, 2, stride=1, semodule=None)
-        self.layer2 = self.__make_layer(Block, 128, 2, stride=2, semodule=SEModule)
-        self.layer3 = self.__make_layer(Block, 256, 2, stride=2, semodule=SEModule)
-        self.layer4 = self.__make_layer(Block, 512, 2, stride=2, semodule=None)
+        self.layer1 = self.__make_layer(Block, 64, 2, stride=1, semodule=None, nolinear=nolinear)
+        self.layer2 = self.__make_layer(Block, 128, 2, stride=2, semodule=SEModule, nolinear=nolinear)
+        self.layer3 = self.__make_layer(Block, 256, 2, stride=2, semodule=SEModule, nolinear=nolinear)
+        self.layer4 = self.__make_layer(Block, 512, 2, stride=2, semodule=None, nolinear=nolinear)
 
     def __make_layer(self, block, planes, blocks,stride=1, dilation=1, 
                             bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True), semodule=None, sigmoid=nn.Sigmoid()):

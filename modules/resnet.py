@@ -14,7 +14,7 @@ from __future__ import division
 import torch
 import torch.nn as nn
 
-from .utils import *
+from utils import *
 
 def get_layers(n_layers):
     blocks = []
@@ -62,10 +62,10 @@ class ResNet(nn.Module):
         if n_layers < 50:
             block = BasicBlock
         blocks = get_layers(n_layers)
-        self.layer1 = self.__make_layer(block, 64, blocks[0], stride=1, semodule=None)
-        self.layer2 = self.__make_layer(block, 128, blocks[1], stride=2, semodule=None)
-        self.layer3 = self.__make_layer(block, 256, blocks[2], stride=2, semodule=None)
-        self.layer4 = self.__make_layer(block, 512, blocks[3], stride=2, semodule=None)
+        self.layer1 = self.__make_layer(block, 64, blocks[0], stride=1, semodule=None, nolinear=nolinear)
+        self.layer2 = self.__make_layer(block, 128, blocks[1], stride=2, semodule=None, nolinear=nolinear)
+        self.layer3 = self.__make_layer(block, 256, blocks[2], stride=2, semodule=None, nolinear=nolinear)
+        self.layer4 = self.__make_layer(block, 512, blocks[3], stride=2, semodule=None, nolinear=nolinear)
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
             nn.Flatten(),
@@ -86,7 +86,7 @@ class ResNet(nn.Module):
         '''
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample =  Conv2d(self.inplanes, planes * block.expansion, ksize=3, stride=stride, padding=1, nolinear=None, bn=bn)
+            downsample =  Conv2d(self.inplanes, planes * block.expansion, ksize=1, stride=stride, padding=0, nolinear=None, bn=bn)
         layers = []
         if semodule is not None:
             semodule = semodule(planes * block.expansion, sigmoid=sigmoid, bn=bn, nolinear=nolinear)
@@ -109,8 +109,8 @@ class ResNet(nn.Module):
         return net, feature
 
 if __name__ == "__main__":
-    x = torch.randn((1, 3, 224, 224))
-    model = ResNet(3)
+    x = torch.randn((1, 3, 64, 64))
+    model = ResNet(3, n_layers=50)
     model = model.cuda()
     x = x.cuda()
     with torch.no_grad():
