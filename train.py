@@ -122,7 +122,7 @@ for epoch in range(epochs):
             en_z = encoder(x)
             de_x = decoder(en_z)
             adv_x = x + de_x
-            adv_pred = classifier(adv_x)
+            adv_pred, _ = classifier(adv_x)
             adv_pred = F.softmax(adv_pred, dim=1)
             adv_pred = torch.max(adv_pred, dim=1)[1].detach().cpu().numpy()
             pred = classifier(x).detach().cpu().numpy()
