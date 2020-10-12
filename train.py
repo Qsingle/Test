@@ -131,8 +131,8 @@ for epoch in range(epochs):
                 p_a.append(i)
             for i in pred:
                 p_p.append(i)
-    acc_u = accuracy_score(label, p_p)
-    acc_a = accuracy_score(label, p_a)
-    f1_u = f1_score(label, p_p, average="macro")
-    f1_a = f1_score(label, p_a, average="macro")
+    acc_u = accuracy_score(ls, p_p)
+    acc_a = accuracy_score(ls, p_a)
+    f1_u = f1_score(ls, p_p, average="macro")
+    f1_a = f1_score(ls, p_a, average="macro")
     print("acc_u:{} f1_u:{} acc_a:{} f1_a:{}".format(acc_u, f1_u, acc_a, f1_a))
