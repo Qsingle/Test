@@ -31,6 +31,7 @@ num_workers = 4
 num_classes = 10
 channels = 3
 epochs = 32
+alpha = 0.05
 
 train_transform = tsf.Compose([
     tsf.Resize((img_size, img_size)),
@@ -52,7 +53,7 @@ test_dataset = CIFAR10("./data", train=False, transform=val_transform, download=
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-encoder = Encoder(in_ch=channels)
+encoder = Encoder(in_ch=channels, out_ch=2048)
 decoder = Decoder(in_ch=2048, out_ch=channels)
 
 classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
@@ -82,10 +83,11 @@ for epoch in range(epochs):
         classifier_opt.zero_grad()
         en_z = encoder(x)
         de_x = decoder(en_z)
-        adv_x = de_x + x
+        adv_x = alpha*de_x + x
         c, f_c = classifier(adv_x)
         cla_loss = c_loss(c, label.long())
-        m_loss = margin_loss(f_c, en_z)
+        de_fc = decoder(f_c)
+        m_loss = margin_loss(de_fc, x)
         c_t_loss = cla_loss + m_loss
         c_t_loss.backward(retain_graph=True)
         classifier_opt.step()
@@ -96,17 +98,16 @@ for epoch in range(epochs):
         decoder_opt.zero_grad()
         en_z = encoder(x)
         de_x = decoder(en_z)
-        c, c_f = classifier(de_x + x)
+        c, c_f = classifier(de_x*alpha + x)
         h_loss = hinge_loss(de_x + x, x)
         re = decoder(encoder(de_x + x))
         re_loss = reconstruct_loss(re, x)
         adv_loss = a_loss(c, target.long())
-        total_loss = adv_loss + 0.5 * h_loss + 0.5*re_loss
+        total_loss = adv_loss +  h_loss + re_loss
         total_loss.backward(retain_graph=True)
         decoder_opt.step()
         encoder_opt.zero_grad()
-       
-    
+        
     p_a = []
     p_p = []
     ls = []

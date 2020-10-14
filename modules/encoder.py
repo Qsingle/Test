@@ -23,7 +23,7 @@ class Encoder(nn.Module):
     '''
         Implementation of the Encoder in our framework.
     '''
-    def __init__(self, in_ch, bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
+    def __init__(self, in_ch, out_ch=2048,bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
         '''
             Initialize the module.
             @in_ch: int, the number of channels of inputs
@@ -36,10 +36,12 @@ class Encoder(nn.Module):
         self.conv2 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.conv3 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.maxpool = nn.MaxPool2d(3, stride=2, padding=1)
-        self.layer1 = self.__make_layer(Block, 64, 2, stride=1, semodule=None, nolinear=nolinear)
-        self.layer2 = self.__make_layer(Block, 128, 2, stride=2, semodule=SEModule, nolinear=nolinear)
-        self.layer3 = self.__make_layer(Block, 256, 2, stride=2, semodule=SEModule, nolinear=nolinear)
-        self.layer4 = self.__make_layer(Block, 512, 2, stride=2, semodule=None, nolinear=nolinear)
+        self.layer1 = self.__make_layer(Block, 64, 2, stride=1, semodule=None, nolinear=nolinear, bn=bn)
+        self.layer2 = self.__make_layer(Block, 128, 2, stride=2, semodule=SEModule, nolinear=nolinear, bn=bn)
+        self.layer3 = self.__make_layer(Block, 256, 2, stride=2, semodule=SEModule, nolinear=nolinear, bn=bn)
+        self.layer4 = self.__make_layer(Block, 512, 2, stride=2, semodule=None, nolinear=nolinear, bn=bn)
+        self.out_conv = Conv2d(self.inplanes, out_ch, ksize=1, stride=1, padding=0, nolinear=nolinear, bn=bn)
+
 
     def __make_layer(self, block, planes, blocks,stride=1, dilation=1, 
                             bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True), semodule=None, sigmoid=nn.Sigmoid()):
@@ -74,6 +76,7 @@ class Encoder(nn.Module):
         net = self.layer2(net)
         net = self.layer3(net)
         net = self.layer4(net)
+        net = self.out_conv(net)
         return net
 
 if __name__ == "__main__":
