@@ -23,10 +23,13 @@ class Encoder(nn.Module):
     '''
         Implementation of the Encoder in our framework.
     '''
-    def __init__(self, in_ch, out_ch=2048,bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
+    def __init__(self, in_ch, out_ch=2048, dilations=[1, 1, 1, 1], strides=[1, 1, 1, 2], bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
         '''
             Initialize the module.
             @in_ch: int, the number of channels of inputs
+            @out_ch: int, the number of channels of outputs
+            @dilations: list, the rates of dilation for each stage
+            @strides: list, the stride of each stage
             @bn: nn.Module, the batch normalization module.
             @nolinear: nn.Module, the nolinear function module
         '''
@@ -36,10 +39,10 @@ class Encoder(nn.Module):
         self.conv2 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.conv3 = Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
         self.maxpool = nn.MaxPool2d(3, stride=2, padding=1)
-        self.layer1 = self.__make_layer(Block, 64, 2, stride=1, semodule=None, nolinear=nolinear, bn=bn)
-        self.layer2 = self.__make_layer(Block, 128, 2, stride=2, semodule=SEModule, nolinear=nolinear, bn=bn)
-        self.layer3 = self.__make_layer(Block, 256, 2, stride=2, semodule=SEModule, nolinear=nolinear, bn=bn)
-        self.layer4 = self.__make_layer(Block, 512, 2, stride=2, semodule=None, nolinear=nolinear, bn=bn)
+        self.layer1 = self.__make_layer(Block, 64, 2, stride=strides[0], dilation=dilatgions[0], semodule=None, nolinear=nolinear, bn=bn)
+        self.layer2 = self.__make_layer(Block, 128, 2, stride=strides[1], dilation=dilatgions[1], semodule=SEModule, nolinear=nolinear, bn=bn)
+        self.layer3 = self.__make_layer(Block, 256, 2, stride=strides[2], dilation=dilatgions[2], semodule=SEModule, nolinear=nolinear, bn=bn)
+        self.layer4 = self.__make_layer(Block, 512, 2, stride=strides[3], dilation=dilatgions[3], semodule=None, nolinear=nolinear, bn=bn)
         self.out_conv = Conv2d(self.inplanes, out_ch, ksize=1, stride=1, padding=0, nolinear=nolinear, bn=bn)
 
 

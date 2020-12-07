@@ -31,10 +31,8 @@ class UpBlock(nn.Module):
         super(UpBlock, self).__init__()
         self.up = nn.UpsamplingBilinear2d(scale_factor=2.0)
         self.up_conv = Conv2d(in_ch, out_ch, ksize=1, stride=1, padding=0, bn=bn, nolinear=nolinear)
-        self.conv = nn.Sequential(
-            Conv2d(out_ch, out_ch, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear),
-            Conv2d(out_ch, out_ch, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
-        )
+        nolinear = FReLU(out_ch)
+        self.conv = BasicBlock(out_ch, out_ch, stride=1, bn=bn, nolinear=nolinear)
     
     def forward(self, x):
         net = self.up(x)
