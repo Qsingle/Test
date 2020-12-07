@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 
 from .utils import *
+from .activations import *
 
 class UpBlock(nn.Module):
     '''
