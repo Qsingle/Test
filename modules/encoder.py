@@ -23,7 +23,7 @@ class Encoder(nn.Module):
     '''
         Implementation of the Encoder in our framework.
     '''
-    def __init__(self, in_ch, out_ch=2048, dilations=[1, 1, 1, 1], strides=[1, 1, 1, 2], bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
+    def __init__(self, in_ch, out_ch=2048, dilations=[1, 1, 1, 1], strides=[1, 2, 2, 2], bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
         '''
             Initialize the module.
             @in_ch: int, the number of channels of inputs
