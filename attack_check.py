@@ -43,7 +43,7 @@ def get_datas(data_dir, img_suffix=".jpg"):
 num_classes = 2
 batchsize = 16
 data_dir = "../cat_dog/val"
-classifier_path = "../ckpts/best_classifier.pth"
+classifier_path = "../ckpts1/best_classifier.pth"
 image_suffix = ".jpg"
 
 classfier = resnet18(pretrained=False, num_classes=num_classes)
@@ -63,7 +63,7 @@ for x, _ in eval_loader:
     preds += pred
 
 acc_clean = accuracy_score(labels, preds)
-print(f"clean accuracy: {acc_clean * 100:.1f} %")
+print(f"clean accuracy: {acc_clean * 100:.2f} %")
 attacks = [
     fa.FGSM(),
     fa.LinfPGD(),

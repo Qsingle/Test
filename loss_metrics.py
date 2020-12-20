@@ -15,19 +15,18 @@ import torch
 import torch.nn as nn
 
 class MissClassification(nn.Module):
-    def __init__(self, average=True):
+    def __init__(self):
         '''
             The adversarial samples are not equal to the labels.
             args:
                 average: bool, whether return the average
         '''
         super(MissClassification, self).__init__()
-        self.average = average
     
     def forward(self, preds, labels):
-        adv = preds != labels
-        assert adv.shape != labels.shape, "The shape of adv are not equal to the labels, got {}/{}".format(adv.shape, labels.shape)
-        if self.average:
-            return adv.mean(dim=-1)
-        else:
-            return adv.sum()
+        preds = torch.softmax(preds, dim=1)
+        preds = torch.max(preds, dim=1)[1]
+        adv = (preds != labels)
+        #assert adv.shape == labels.shape, "The shape of adv are not equal to the labels, got {}/{}".format(adv.shape, labels.shape)
+      
+        return 1 - adv.sum() / adv.size()[0]

@@ -14,6 +14,7 @@ from __future__ import absolute_import
 import torch
 from albumentations import Compose,RandomBrightnessContrast,RandomGamma, HorizontalFlip, VerticalFlip, ChannelShuffle, Resize, PadIfNeeded,Normalize
 from torch.utils.data import Dataset
+from skimage.filters import sobel
 import numpy as np
 import os
 import glob

@@ -95,7 +95,7 @@ for epoch in range(epochs):
     for x, label in train_loader:
         x = x.to(device, dtype=torch.float32)
         label = label.to(device, dtype=torch.long)
-        target = torch.randint(0, num_classes, label.size()).to(device)        
+        #target = torch.randint(0, num_classes, label.size()).to(device)        
         encoder.train()
         decoder.train()
         classifier.eval()
