@@ -46,3 +46,36 @@ def denormalize(tensor:torch.Tensor, means=[0.485, 0.456, 0.406], stds=[0.229, 0
         channel.mul_(std).add_(mean)
 
     return denormalized
+
+def standardize_and_clip(tensor, min_value=0.0, max_value=1.0):
+    """Standardizes and clips input tensor.
+
+    Standardize the input tensor (mean = 0.0, std = 1.0), ensures std is 0.1
+    and clips it to values between min/max (default: 0.0/1.0).
+
+    Args:
+        tensor (torch.Tensor):
+        min_value (float, optional, default=0.0)
+        max_value (float, optional, default=1.0)
+
+    Shape:
+        Input: :math:`(C, H, W)`
+        Output: Same as the input
+
+    Return:
+        torch.Tensor (torch.float32): Normalised tensor with values between
+            [min_value, max_value]
+
+    """
+
+    tensor = tensor.detach().cpu()
+
+    mean = tensor.mean()
+    std = tensor.std()
+    if std == 0:
+        std += 1e-7
+
+    standardized = tensor.sub(mean).div(std).mul(0.1)
+    clipped = standardized.add(0.5).clamp(min_value, max_value)
+
+    return clipped
