@@ -32,6 +32,7 @@ from modules.encoder import Encoder
 from datasets import PALMClassifyDataset
 from display_utils import denormalize
 from modules.resnet import ResNet
+from loss_metrics import MissClassification
 
 img_size = 224
 batch_size = 2
@@ -85,7 +86,8 @@ decoder_opt = opt.Adam(decoder.parameters(), lr=init_lr, weight_decay=5e-4)
 classifier_opt = opt.Adam(classifier.parameters(), lr=init_lr, weight_decay=5e-4)
 
 c_loss = nn.CrossEntropyLoss()
-a_loss = nn.CrossEntropyLoss()
+# a_loss = nn.CrossEntropyLoss()
+a_loss = MissClassification()
 hinge_loss = nn.MSELoss()
 margin_loss = nn.MSELoss()
 reconstruct_loss = nn.L1Loss()
