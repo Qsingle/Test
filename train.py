@@ -30,7 +30,8 @@ from sklearn.model_selection import train_test_split
 from modules.decoder import Decoder
 from modules.encoder import Encoder
 from datasets import PALMClassifyDataset
-# from modules.resnet import ResNet
+from display_utils import denormalize
+from modules.resnet import ResNet
 
 img_size = 224
 batch_size = 2
@@ -40,6 +41,8 @@ channels = 3
 epochs = 64
 alpha = 0.005
 init_lr = 0.01 * batch_size / 256
+means = [0.5, 0.5, 0.5]
+stds = [0.5, 0.5, 0.5]
 
 # train_transform = tsf.Compose([
 #     tsf.Resize((img_size, img_size)),
@@ -68,8 +71,8 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num
 encoder = Encoder(in_ch=channels, out_ch=2048)
 decoder = Decoder(in_ch=2048, out_ch=channels)
 
-#classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
-classifier = resnet18(pretrained=False, num_classes=num_classes, zero_init_residual=False)
+classifier = ResNet(channels, n_layers=50, num_classes=num_classes)
+#classifier = resnet18(pretrained=False, num_classes=num_classes, zero_init_residual=False)
 # classifier.load_state_dict(torch.load("./best_classifier.pth", map_location="cpu"))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -104,12 +107,11 @@ for epoch in range(epochs):
         en_z = encoder(x)
         de_x = decoder(en_z)
         adv_x = x + de_x*alpha
-        c = classifier(adv_x)
+        c,fe = classifier(adv_x)
         h_loss = hinge_loss(adv_x, x)
-        re = decoder(encoder(adv_x))
-        re_loss = reconstruct_loss(re, x)
+        # re = decoder(encoder(adv_x))
         adv_loss = a_loss(c, target.long())
-        total_loss = 4*adv_loss +  h_loss + re_loss
+        total_loss = 4*adv_loss +  h_loss
         total_loss.backward(retain_graph=True)
         decoder_opt.step()
         encoder_opt.step()
@@ -117,19 +119,24 @@ for epoch in range(epochs):
         encoder.eval()
         decoder.eval()
         classifier_opt.zero_grad()
-        c = classifier(x)
+        c, _ = classifier(x)
         cla_u_loss = c_loss(c, label)
         cla_u_loss.backward(retain_graph=True)
         classifier_opt.step()
         en_z = encoder(x)
         de_x = decoder(en_z)
         classifier_opt.zero_grad()
+        decoder_opt.zero_grad()
         adv_x = x + alpha*de_x
-        c = classifier(adv_x)
+        c,fe = classifier(adv_x)
+        re = decoder(fe)
         cla_loss = c_loss(c, label.long())
+        re_loss = reconstruct_loss(re, x)
         c_t_loss = cla_loss
         c_t_loss.backward()
         classifier_opt.step()
+        re_loss.backward()
+        decoder_opt.step()
         
         
     p_a = []
@@ -151,12 +158,13 @@ for epoch in range(epochs):
             en_z = encoder(x)
             de_x = decoder(en_z)
             adv_x = x + de_x*alpha
-            adv_pred = classifier(adv_x)
-            re = decoder(encoder(adv_x))
+            adv_pred,fe = classifier(adv_x)
+            # re = decoder(encoder(adv_x))
+            re = decoder(fe)
             adv_pred = F.softmax(adv_pred, dim=1)
             adv_pred = torch.max(adv_pred, dim=1)[1].detach().cpu().numpy()
             if show:
-              img = x[0].detach().cpu().numpy()
+              img = denormalize(x[0], means=means, stds=stds).detach().cpu().numpy()
               img = np.transpose(img, axes=[1, 2, 0])
               plt.figure(dpi=224)
               plt.subplot(2, 2, 1)
@@ -164,7 +172,7 @@ for epoch in range(epochs):
               plt.imshow(img)
               plt.xticks([])
               plt.yticks([])
-              img = adv_x[0].detach().cpu().numpy()
+              img = denormalize(adv_x[0], means=means, stds=stds).detach().cpu().numpy()
               img = np.transpose(img, axes=[1, 2, 0])
               plt.subplot(2, 2, 2)
               plt.title("{}".format(adv_pred[0]))
@@ -181,7 +189,7 @@ for epoch in range(epochs):
               plt.yticks([])
               plt.show()
               show = False
-            pred = classifier(x)
+            pred, _ = classifier(x)
             pred = torch.max(F.softmax(pred, dim=1), dim=1)[1].detach().cpu().numpy()
             for i in adv_pred:
                 p_a.append(i)
