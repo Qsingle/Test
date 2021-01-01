@@ -101,9 +101,10 @@ class Block(nn.Module):
         super(Block, self).__init__()
         self.conv1 = Conv2d(in_ch, planes, ksize=1, stride=1, padding=0, bn=bn, nolinear=nolinear)
         self.conv2 = Conv2d(planes, planes, ksize=3, stride=stride, padding=1, bn=bn, nolinear=nolinear)
-        self.conv3 = Conv2d(planes, planes*self.expansion, ksize=1, stride=1, padding=0, bn=bn, nolinear=nolinear)
+        self.conv3 = Conv2d(planes, planes*self.expansion, ksize=1, stride=1, padding=0, bn=bn, nolinear=None)
         self.downsample = downsample
         self.se = semodule
+        self.nolinear = nolinear
     
     def forward(self, x):
         net = self.conv1(x)
@@ -114,6 +115,7 @@ class Block(nn.Module):
         if self.downsample is not None:
             x = self.downsample(x)
         net = net + x
+        net = self.nolinear(net)
         return net
 
 class BasicBlock(nn.Module):
@@ -136,9 +138,10 @@ class BasicBlock(nn.Module):
         '''
         super(BasicBlock, self).__init__()
         self.conv1 = Conv2d(in_ch, planes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
-        self.conv2 = Conv2d(planes, planes, ksize=3, stride=stride, padding=1, bn=bn, nolinear=nolinear)
+        self.conv2 = Conv2d(planes, planes, ksize=3, stride=stride, padding=1, bn=bn, nolinear=None)
         self.downsample = downsample
         self.se = semodule
+        self.nolinear = nolinear
     
     def forward(self, x):
         net = self.conv1(x)
@@ -148,4 +151,5 @@ class BasicBlock(nn.Module):
         if self.downsample is not None:
             x = self.downsample(x)
         net = net + x
+        net = self.nolinear(net)
         return net
