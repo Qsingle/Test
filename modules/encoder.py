@@ -76,6 +76,7 @@ class Encoder(nn.Module):
         net = self.conv3(net)
         net = self.maxpool(net)
         net = self.layer1(net)
+        # x1 = net
         net = self.layer2(net)
         net = self.layer3(net)
         net = self.layer4(net)

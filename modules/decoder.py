@@ -13,9 +13,10 @@ from __future__ import division
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .utils import *
-from .activations import *
+# from .activations import *
 
 class UpBlock(nn.Module):
     '''
@@ -66,6 +67,8 @@ class Decoder(nn.Module):
         net = self.up2(net)
         net = self.up3(net)
         net = self.up4(net)
+        # x1 = F.interpolate(x1, size=net.size()[2:], mode="bilinear", align_corners=True)
+        # net = torch.cat([net, x1], dim=1)
         net = self.up5(net)
         net = self.out_conv(net)
         return net
@@ -76,7 +79,7 @@ if __name__ == "__main__":
     encoder = Encoder(3).cuda()
     decoder = Decoder(2048, 3).cuda()
     with torch.no_grad():
-        out1 = encoder(x)
-        out2 = decoder(out1)
+        out1, x1 = encoder(x)
+        out2 = decoder(out1, x1)
         print(out1.shape)
         print(out2.shape)

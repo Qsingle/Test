@@ -37,7 +37,8 @@ class ResNet(nn.Module):
         Implementation of the ResNet.
         ResNet:"Deep Residual Learning for Image Recognition"<https://arxiv.org/pdf/1512.03385.pdf>
     '''
-    def __init__(self, in_ch, n_layers=18, num_classes=1000, light_head=False, bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
+    def __init__(self, in_ch, n_layers=18, num_classes=1000, light_head=False, bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True), avd=False, 
+                avd_first=False,reduction=4, radix=1, steam_width=64, avg_layer=False, avg_down=False):
         '''
             Initialize the module.
             @in_ch: int, the number of channels of inputs
@@ -48,12 +49,14 @@ class ResNet(nn.Module):
             @nolinear: nn.Module, the nolinear function module
         '''
         super(ResNet, self).__init__()
+        self.avg_layer = avg_layer
+        self.avg_down = avg_down
         self.inplanes = 64
         if light_head:
             self.conv1 = nn.Sequential(
-                Conv2d(in_ch, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear),
-                Conv2d(self.inplanes, self.inplanes, ksize=3, stride=2, padding=1, bn=bn, nolinear=nolinear),
-                Conv2d(self.inplanes, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
+                Conv2d(in_ch, steam_width, ksize=3, stride=2, padding=1, bn=bn, nolinear=nolinear),
+                Conv2d(steam_width, steam_width, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear),
+                Conv2d(steam_width, self.inplanes, ksize=3, stride=1, padding=1, bn=bn, nolinear=nolinear)
             )
         else:
             self.conv1 = Conv2d(in_ch, self.inplanes, ksize=7, stride=2, padding=3, bn=bn, nolinear=nolinear)
@@ -62,10 +65,10 @@ class ResNet(nn.Module):
         if n_layers < 50:
             block = BasicBlock
         blocks = get_layers(n_layers)
-        self.layer1 = self.__make_layer(block, 64, blocks[0], stride=1, semodule=None, nolinear=nolinear)
-        self.layer2 = self.__make_layer(block, 128, blocks[1], stride=2, semodule=None, nolinear=nolinear)
-        self.layer3 = self.__make_layer(block, 256, blocks[2], stride=2, semodule=None, nolinear=nolinear)
-        self.layer4 = self.__make_layer(block, 512, blocks[3], stride=2, semodule=None, nolinear=nolinear)
+        self.layer1 = self.__make_layer(block, 64, blocks[0], stride=1, semodule=None, nolinear=nolinear,avd=avd, reduction=reduction, radix=radix, avd_first=avd_first)
+        self.layer2 = self.__make_layer(block, 128, blocks[1], stride=2, semodule=None, nolinear=nolinear,avd=avd, reduction=reduction, radix=radix, avd_first=avd_first)
+        self.layer3 = self.__make_layer(block, 256, blocks[2], stride=2, semodule=None, nolinear=nolinear,avd=avd, reduction=reduction, radix=radix, avd_first=avd_first)
+        self.layer4 = self.__make_layer(block, 512, blocks[3], stride=2, semodule=None, nolinear=nolinear,avd=avd, reduction=reduction, radix=radix, avd_first=avd_first)
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
             nn.Flatten(),
@@ -73,7 +76,7 @@ class ResNet(nn.Module):
         ) 
 
     def __make_layer(self, block, planes, blocks,stride=1, dilation=1, 
-                            bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True), semodule=None, sigmoid=nn.Sigmoid()):
+                            bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True), semodule=None, sigmoid=nn.Sigmoid(), avd=False, avd_first=False,reduction=4, radix=1):
         '''
             Build the stage in the model.
             @block: nn.Module, the block module
@@ -86,14 +89,24 @@ class ResNet(nn.Module):
         '''
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample =  Conv2d(self.inplanes, planes * block.expansion, ksize=1, stride=stride, padding=0, nolinear=None, bn=bn)
+            down_layers = []
+            down_stride = stride
+            if self.avg_layer:
+                if self.avg_down:
+                    avg_layer = nn.AvgPool2d(kernel_size=down_stride, stride=down_stride,  padding=0)
+                    down_stride=1
+                else:
+                    avg_layer = nn.AvgPool2d(kernel_size=1, stride=1, padding=0)
+                down_layers.append(avg_layer)
+            down_layers.append(Conv2d(self.inplanes, planes * block.expansion, ksize=1, stride=down_stride, padding=0, nolinear=None, bn=bn))
+            downsample =  nn.Sequential(*down_layers)
         layers = []
         if semodule is not None:
             semodule = semodule(planes * block.expansion, sigmoid=sigmoid, bn=bn, nolinear=nolinear)
-        layers.append(block(self.inplanes, planes,stride=stride, downsample=downsample, bn=bn, nolinear=nolinear, semodule=semodule))
+        layers.append(block(self.inplanes, planes,stride=stride, downsample=downsample, bn=bn, nolinear=nolinear, semodule=semodule, avd=avd, reduction=reduction, radix=radix, avd_first=avd_first))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, stride=1,  bn=bn, nolinear=nolinear, semodule=semodule))
+            layers.append(block(self.inplanes, planes, stride=1,  bn=bn, nolinear=nolinear, semodule=semodule, avd=avd, reduction=reduction, radix=radix, avd_first=avd_first))
         return nn.Sequential(*layers)
     
     def forward(self, x):
