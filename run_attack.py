@@ -18,36 +18,33 @@ import torchvision.transforms as tsf
 import numpy as np
 import json
 import cv2
+import pandas as pd
+from albumentations import Compose, Resize, Normalize
+import os
+import tqdm
 
 from display_utils import denormalize
 from modules.encoder import Encoder
 from modules.decoder import Decoder
 
+
 f = open("config.json")
 config = json.load(f)
 f.close()
 img_size = config["img_size"]
-batch_size = config["batch_size"]
-num_workers = config["num_workers"]
 means = config["means"]
 std = config["stds"]
 channels = config["channel"]
 alpha = config["alpha"]
-
-if isinstance(config["out_size"], int):
-    out_size = (config["out_size"]) * 2
-elif isinstance(config["out_size"], list):
-    out_size = (config["out_size"][0], config["out_size"][1])
-else:
-    raise ValueError("Unknown size")
-
-val_transform =  tsf.Compose([
-    tsf.Resize((img_size, img_size)),
-    tsf.ToTensor(),
-    tsf.Normalize(mean=means, std=std)
-])
-val_dataset = CIFAR10(root="./data", train=False, transform=val_transform, download=True)
-test_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+csv_path = config["csv_path"]
+img_dir = config["image_dir"]
+output_dir = config["output_dir"]
+if not os.path.exists(output_dir):
+    os.mkdir(output_dir)
+data = pd.read_csv(csv_path)
+paths = data["ImageId"].values
+paths = [os.path.join(img_dir, p) for p in paths]
+labels = data["TrueLabel"].values
 
 encoder = Encoder(channels, out_ch=2048)
 decoder = Decoder(2048, channels)
@@ -63,21 +60,36 @@ encoder.eval()
 decoder.eval()
 x_adv = []
 with torch.no_grad():
-    for x, label in test_loader:
-        x = x.to(device, dtype=torch.float32)
-        en = encoder(x)
+    bar = tqdm.tqdm(paths)
+    for path in bar:
+        filename = os.path.basename(path)
+        bar.set_description(f"processing:{filename}")
+        image = cv2.imread(path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        h, w = image.shape[:2]
+        norm = Compose([
+            Resize(img_size, img_size, always_apply=True),
+            Normalize(mean=means, std=std, always_apply=True)
+        ])
+        norm_data = norm(image=image)
+        image = norm_data["image"]
+        if image.ndim > 2:
+            image = np.transpose(image, axes=[2, 0, 1])
+        else:
+            image = np.expand_dims(image, axis=0)
+        image = torch.from_numpy(image)
+        image = image.unsqueeze(0)
+        image = image.to(device, dtype=torch.float32)
+        en = encoder(image)
         de = decoder(en)
-        de = x + alpha*de
-        de = denormalize(de[0], means=means, stds=std)
-        de = de.detach().cpu().numpy()
-        de = np.transpose(de, axes=[1, 2, 0])
-        de = cv2.resize(de, (32, 32))
-        de = de * 255
-        de = np.clip(de, 0, 255)
-        de = np.expand_dims(de, axis=0)
-        x_adv.append(de)
-
-x_out = np.concatenate(x_adv, axis=0)
-save_path = config["save_path"]
-np.save(save_path, x_out)
-print("result are saved to {}".format(save_path))
+        adv = image + alpha*de
+        #print(adv.shape)
+        adv = adv.squeeze(0)
+        adv = denormalize(adv, means, std)
+        adv = adv * 255
+        adv = torch.clamp(adv, 0, 255)
+        adv = adv.detach().cpu().numpy()
+        adv = np.transpose(adv, axes=[1, 2, 0])
+        adv = cv2.cvtColor(adv, cv2.COLOR_RGB2BGR)
+        adv = cv2.resize(adv, (w, h))
+        adv = cv2.imwrite("./output/{}".format(filename), adv)

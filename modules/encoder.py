@@ -75,13 +75,13 @@ class Encoder(nn.Module):
         net = self.conv2(net)
         net = self.conv3(net)
         net = self.maxpool(net)
+        x1 = net
         net = self.layer1(net)
-        # x1 = net
         net = self.layer2(net)
         net = self.layer3(net)
         net = self.layer4(net)
         net = self.out_conv(net)
-        return net
+        return net, x1
 
 if __name__ == "__main__":
     import torch

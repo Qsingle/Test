@@ -173,7 +173,7 @@ class PALMClassifyDataset(Dataset):
         #resize the image
         resize = Compose([
             Resize(height=height, width=width, always_apply=True),
-            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), always_apply=True)
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225),always_apply=True)
         ])
         resize_data = resize(image=img)
         img = resize_data["image"]

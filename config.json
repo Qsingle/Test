@@ -1,0 +1,12 @@
+{
+  "img_size": 224,
+  "means": [0.485, 0.456, 0.406],
+  "stds" : [0.229, 0.224, 0.225],
+  "channel": 3,
+  "alpha": 0.03,
+  "csv_path": "/data/adversarial_tianchi/dev.csv",
+  "image_dir": "/data/adversarial_tianchi/images",
+  "output_dir": "./output",
+  "encoder" : "./ckpts/densenet121_imagenet_best_encoder.pth",
+  "decoder" : "./ckpts/densenet121_imagenet_best_decoder.pth"
+}

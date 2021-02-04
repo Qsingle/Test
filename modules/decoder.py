@@ -46,7 +46,7 @@ class Decoder(nn.Module):
     '''
         Implementation of the Decoder in our framework.
     '''
-    def __init__(self, in_ch, out_ch, bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
+    def __init__(self, in_ch, in_ch2,out_ch, bn=nn.BatchNorm2d, nolinear=nn.ReLU(inplace=True)):
         '''
             Initialize the module.
             @in_ch: int, the number of channels for inputs
@@ -59,16 +59,16 @@ class Decoder(nn.Module):
         self.up2 = UpBlock(512, 256, bn=bn, nolinear=nolinear)
         self.up3 = UpBlock(256, 128, bn=bn, nolinear=nolinear)
         self.up4 = UpBlock(128, 64, bn=bn, nolinear=nolinear)
-        self.up5 = UpBlock(64, 64, bn=bn, nolinear=nolinear)
+        self.up5 = UpBlock(64+in_ch2, 64, bn=bn, nolinear=nolinear)
         self.out_conv = Conv2d(64, out_ch, ksize=1, stride=1, padding=0, bn=bn, nolinear=nolinear)
     
-    def forward(self, x):
+    def forward(self, x, x1):
         net = self.up1(x)
         net = self.up2(net)
         net = self.up3(net)
         net = self.up4(net)
-        # x1 = F.interpolate(x1, size=net.size()[2:], mode="bilinear", align_corners=True)
-        # net = torch.cat([net, x1], dim=1)
+        x1 = F.interpolate(x1, size=net.size()[2:], mode="bilinear", align_corners=True)
+        net = torch.cat([net, x1], dim=1)
         net = self.up5(net)
         net = self.out_conv(net)
         return net
@@ -77,7 +77,7 @@ if __name__ == "__main__":
     from encoder import Encoder
     x = torch.randn((2, 3, 224, 224)).cuda()
     encoder = Encoder(3).cuda()
-    decoder = Decoder(2048, 3).cuda()
+    decoder = Decoder(2048, 64,3).cuda()
     with torch.no_grad():
         out1, x1 = encoder(x)
         out2 = decoder(out1, x1)
