@@ -117,14 +117,17 @@ class PALMDataset(Dataset):
         return torch.from_numpy(img.astype(np.float32)), torch.from_numpy(mask.astype(np.float32))
 
 class PALMClassifyDataset(Dataset):
-    def __init__(self, image_paths, labels, augmentation=False, img_size=224):
+    def __init__(self, image_paths, labels, augmentation=False, img_size=224,
+                 mean=(0.5, 0.5, 0,5), std=(0.5, 0.5, 0.5)):
         '''
             Implementation of the dataset for palm dataset classifier task.
             args:
                 image_paths: list, the paths of the images
                 labels: list, the labels for the image
                 augmentation: bool, whether use data augmentation
-                img_size: int or tuple, the size of output image 
+                img_size: int or tuple, the size of output image
+                mean (Union[list, tuple]), the mean of the normalization
+                std (Union[list, tuple]), the std of the normalization
         '''
         super(PALMClassifyDataset, self).__init__()
         assert len(image_paths) == len(labels), "The lengh of image_paths and labels must be equal, but got {}/{}".format(len(image_paths), len(labels))
@@ -133,6 +136,8 @@ class PALMClassifyDataset(Dataset):
         self.length = len(image_paths)
         self.augmentation = augmentation
         self.img_size = img_size
+        self.mean = mean
+        self.std = std
     
     def __len__(self):
         return self.length
@@ -173,7 +178,7 @@ class PALMClassifyDataset(Dataset):
         #resize the image
         resize = Compose([
             Resize(height=height, width=width, always_apply=True),
-            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225),always_apply=True)
+            Normalize(mean=self.mean, std=self.std,always_apply=True)
         ])
         resize_data = resize(image=img)
         img = resize_data["image"]
